@@ -1,0 +1,277 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "provenance": [],
+      "authorship_tag": "ABX9TyNpDcnLSUHeR7YQ/w1uMK38",
+      "include_colab_link": true
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "view-in-github",
+        "colab_type": "text"
+      },
+      "source": [
+        "<a href=\"https://colab.research.google.com/github/swsewon3-ship-it/intro_to_python_workshop/blob/main/FINAL%20PROJECT\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "# Title \"\"\n",
+        "<br><br>\n",
+        "\n",
+        "<h3 align=\"right\">Intro to Text Analysis in Python (2025 Fall)\n",
+        "<h3 align=\"right\">Sewon Sunwoo</h3>\n",
+        "<br><br><br><br>\n",
+        "\n",
+        "\n",
+        "---\n",
+        "<br>\n",
+        "\n",
+        "## 1. Introduction\n",
+        "<br> <span style=\"font-size:18px;\">\n",
+        "South Korea's fertility rate has declined dramatically since 2000, reaching the lowest country among OECD countries by 2024. This research aims to explore both quantiatitve trends and qualitative narratives surronding this issue.\n",
+        "By combining  time-series analysis of fertility rates with keywords analysis of the OECD's 2025 report \"Korea's Unborn Future : Understanding Low-Fertility Rate\", this final project aims to identify not only numeric change of fertility rate but also policy and discourse frame related to this challenges.\n",
+        "This hybrid approach offers a multi-dimensional understanding : the numerical trajectory shows the scale of decline, while text analysis helps illuminate the explanations and policy attitudes underlying it.\n",
+        "<br><br>\n",
+        "\n",
+        "## 2. Methodology\n",
+        "### A. Datasets and Tools\n",
+        " - Dataset 1 : <em>Korea_fertility_2000–2024.csv<em> - compiled national and regional fertility indicators including breakdowns of age specific fertility rates. Cleand and translated by author, from original data source \"https://gsis.kwdi.re.kr/statHtml/statHtml.do?orgId=338&tblId=DT_1AD0610R\"\n",
+        " - Dataset 2 : Text corpus from OECD(2025), \"Korea's Unborn Future: Understanding Low-Fertility Rate\" (cleaned plain text)\n",
+        "\n",
+        "### B. Key Python Libraries used\n",
+        " - Pandas : for filtering and analyzing of time-series data by region, year, and ages\n",
+        " - Plotly Express : for creating visualzations including line trends, region/age comparisons\n",
+        " - NLTK : for tokenization, stopword removal, lemmatization and word frequency analysis of the OECD report\n",
+        " - Matplotlib / WordCloud : for textual visualization like wordcloud   \n",
+        "\n",
+        "### C. Process\n",
+        "<ol>\n",
+        "  <li>Quantitatively analyze Korea's fertility rate trends (2000–2024) using Pandas & Plotly</li>\n",
+        "  <li>Complement this with text analysis of OECD's 2025 report \"Korea's Unborn Future: Understanding Low-Fertility Rate\", using NLTK to identify key policy keywords and themes</li>\n",
+        "  <li>Integrate both perspectives to hypothesize potential drivers and policy implications</li>\n",
+        "</ol>\n"
+      ],
+      "metadata": {
+        "id": "1qgDEOzELcsE"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "<br>\n",
+        "\n",
+        "## 3. Results with codes\n"
+      ],
+      "metadata": {
+        "id": "Cz881csqNpfT"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "###    A. Basic setup + Comment Crawling\n"
+      ],
+      "metadata": {
+        "id": "HgH8rCItNrAj"
+      }
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 1,
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "OAtD_t6JLEDx",
+        "outputId": "4beaa941-2292-492d-ca4b-f448393a97f0"
+      },
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stderr",
+          "text": [
+            "[nltk_data] Downloading package punkt to /root/nltk_data...\n",
+            "[nltk_data]   Unzipping tokenizers/punkt.zip.\n",
+            "[nltk_data] Downloading package stopwords to /root/nltk_data...\n",
+            "[nltk_data]   Unzipping corpora/stopwords.zip.\n",
+            "[nltk_data] Downloading package vader_lexicon to /root/nltk_data...\n",
+            "[nltk_data] Downloading package vader_lexicon to /root/nltk_data...\n",
+            "[nltk_data]   Package vader_lexicon is already up-to-date!\n"
+          ]
+        },
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "total number of comments(raw): 15000\n",
+            "total number of comments(clean): 14873\n"
+          ]
+        }
+      ],
+      "source": [
+        "from googleapiclient.discovery import build\n",
+        "import pandas as pd\n",
+        "import re\n",
+        "from collections import Counter\n",
+        "import itertools\n",
+        "import nltk\n",
+        "import matplotlib.pyplot as plt\n",
+        "import networkx as nx\n",
+        "\n",
+        "nltk.download('punkt')\n",
+        "nltk.download('stopwords')\n",
+        "nltk.download('vader_lexicon')\n",
+        "from nltk.corpus import stopwords\n",
+        "\n",
+        "\n",
+        "nltk.download('vader_lexicon')\n",
+        "\n",
+        "\n",
+        "API_KEY = \"AIzaSyCKEIgqxSI4odCxCsO9C8_lJ4ke9rLFOSU\"\n",
+        "VIDEO_ID = \"Ufmu1WD2TSk\"\n",
+        "\n",
+        "youtube = build(\"youtube\", \"v3\", developerKey=API_KEY)\n",
+        "\n",
+        "def fetch_comments(video_id, max_comments=15000):\n",
+        "    comments = []\n",
+        "    next_page_token = None\n",
+        "\n",
+        "    while True:\n",
+        "        if len(comments) >= max_comments:\n",
+        "            break\n",
+        "\n",
+        "        request = youtube.commentThreads().list(\n",
+        "            part=\"snippet\",\n",
+        "            videoId=video_id,\n",
+        "            maxResults=100,\n",
+        "            pageToken=next_page_token,\n",
+        "            textFormat=\"plainText\"\n",
+        "        )\n",
+        "        response = request.execute()\n",
+        "\n",
+        "        for item in response[\"items\"]:\n",
+        "            text = item[\"snippet\"][\"topLevelComment\"][\"snippet\"][\"textDisplay\"]\n",
+        "            comments.append(text)\n",
+        "\n",
+        "            if len(comments) >= max_comments:\n",
+        "                break\n",
+        "\n",
+        "        next_page_token = response.get(\"nextPageToken\")\n",
+        "        if not next_page_token:\n",
+        "            break\n",
+        "\n",
+        "    return comments\n",
+        "\n",
+        "\n",
+        "raw_comments = fetch_comments(VIDEO_ID, max_comments=15000)\n",
+        "print(\"total number of comments(raw):\", len(raw_comments))\n",
+        "\n",
+        "\n",
+        "df = pd.DataFrame({\"comment\": raw_comments})\n",
+        "df = df.drop_duplicates(subset=\"comment\").reset_index(drop=True)\n",
+        "print(\"total number of comments(clean):\", len(df))\n",
+        ""
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "### B. Analysis of English comments"
+      ],
+      "metadata": {
+        "id": "DBFcXWpdODk3"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Find out Korean comments\n",
+        "def is_korean(text):\n",
+        "    return bool(re.search(r\"[가-힣]\", text))\n",
+        "\n",
+        "df[\"is_korean\"] = df[\"comment\"].apply(is_korean)\n",
+        "\n",
+        "df_ko = df[df[\"is_korean\"]].copy()\n",
+        "df_en = df[~df[\"is_korean\"]].copy()\n",
+        "\n",
+        "print(\"Numner of korean comments:\", len(df_ko))\n",
+        "print(\"Number of English/other comments:\", len(df_en))\n",
+        "\n"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "Hlycyi5gOD0r",
+        "outputId": "16ed0ba1-e73f-4535-ff31-f389b58230ff"
+      },
+      "execution_count": 2,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Numner of korean comments: 3248\n",
+            "Number of English/other comments: 11625\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#Sampling for English comments\n",
+        "N = 5000\n",
+        "RSEED = 42\n",
+        "\n",
+        "df_en_sample = df_en.sample(\n",
+        "    n=min(N, len(df_en)),\n",
+        "    random_state=RSEED\n",
+        ").reset_index(drop=True)\n",
+        "\n",
+        "df_ko_sample = df_ko.sample(\n",
+        "    n=min(N, len(df_ko)),\n",
+        "    random_state=RSEED\n",
+        ").reset_index(drop=True)\n",
+        "\n",
+        "print(\"english comments sampling:\", len(df_en_sample))\n",
+        "print(\"korean comments sampling:\", len(df_ko_sample))\n",
+        "\n",
+        "df_en_sample.rename(columns={\"comment\": \"comment_en\"}, inplace=True)\n",
+        "df_ko_sample.rename(columns={\"comment\": \"comment_ko\"}, inplace=True)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "90b4Llc6Ohmq",
+        "outputId": "9b8a1654-35a9-4cf8-c55c-50ba11e44b36"
+      },
+      "execution_count": 3,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "english comments sampling: 5000\n",
+            "korean comments sampling: 3248\n"
+          ]
+        }
+      ]
+    }
+  ]
+}
